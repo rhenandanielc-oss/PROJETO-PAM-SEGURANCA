@@ -1,0 +1,1269 @@
+<title>Guia PAM Segurança</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: manual técnico — índice fixo à esquerda no desktop, coluna única de leitura; blocos e telas aparecem como "pranchas" */
+:root{
+  --bg:#F1F3F6; --surface:#FFFFFF; --ink:#142033; --muted:#566479; --line:#D5DBE4;
+  --accent:#C2152B; --accent-soft:#FBE7E9; --amber:#A86400; --amber-soft:#FFF2DC; --ok:#1E7A6E;
+  --ws:#F8F9FB; --wsgrid:#E6EAF0; --code:#E8ECF2;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --f-mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1520; --surface:#151E2B; --ink:#E5EAF1; --muted:#97A4B7; --line:#273346;
+  --accent:#FF6470; --accent-soft:#3A1A20; --amber:#F2A93B; --amber-soft:#33260F; --ok:#4FC3B2;
+  --ws:#1A2331; --wsgrid:#232E3F; --code:#1F2939; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1520; --surface:#151E2B; --ink:#E5EAF1; --muted:#97A4B7; --line:#273346;
+  --accent:#FF6470; --accent-soft:#3A1A20; --amber:#F2A93B; --amber-soft:#33260F; --ok:#4FC3B2;
+  --ws:#1A2331; --wsgrid:#232E3F; --code:#1F2939; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px}
+@media(min-width:1040px){.wrap{grid-template-columns:240px minmax(0,1fr)}}
+nav.toc{display:none}
+@media(min-width:1040px){nav.toc{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;max-height:calc(100vh - 48px);overflow:auto;padding-top:28px;font-size:14.5px}}
+nav.toc b{font-family:var(--f-display);font-stretch:85%;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--muted);display:block;margin:18px 0 6px}
+nav.toc a{display:block;color:var(--ink);text-decoration:none;padding:3px 0 3px 10px;border-left:2px solid var(--line)}
+nav.toc a:hover{border-left-color:var(--accent);color:var(--accent)}
+main{min-width:0;max-width:880px}
+header.top{padding-block:40px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.eyebrow{font-family:var(--f-display);font-stretch:80%;font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--accent)}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(34px,6vw,54px);font-weight:800;font-stretch:88%;margin:8px 0 14px}
+h2{font-size:clamp(26px,4vw,34px);font-weight:800;font-stretch:90%;margin:64px 0 12px;padding-top:12px;border-top:3px solid var(--ink)}
+h2 .part{display:block;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:6px}
+h3{font-size:23px;font-weight:700;font-stretch:92%;margin:44px 0 10px}
+h4{font-size:17px;font-weight:700;margin:26px 0 6px}
+p{margin:10px 0;max-width:68ch}
+.lead{font-size:19px;color:var(--muted);max-width:62ch}
+code,.mono{font-family:var(--f-mono);font-size:.84em;background:var(--code);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+ul,ol{padding-left:22px;max-width:68ch}
+li{margin:4px 0}
+a{color:var(--accent)}
+.note{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:14px 16px;margin:16px 0;max-width:72ch}
+.note.warn{background:var(--amber-soft);border-color:transparent}
+.note.key{background:var(--accent-soft);border-color:transparent}
+.note b:first-child{font-family:var(--f-display);font-stretch:88%;letter-spacing:.03em}
+.tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-display);font-stretch:88%;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+.steps{counter-reset:s;list-style:none;padding-left:0}
+.steps>li{counter-increment:s;position:relative;padding-left:40px;margin:12px 0}
+.steps>li::before{content:counter(s);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--bg);font-family:var(--f-display);font-weight:700;font-size:14px;display:grid;place-items:center}
+
+/* ===== Pranchas de blocos (imitam o editor de blocos do App Inventor) ===== */
+figure.ws{margin:16px 0 22px;border:1px solid var(--line);border-radius:10px;background:var(--ws);background-image:linear-gradient(var(--wsgrid) 1px,transparent 1px),linear-gradient(90deg,var(--wsgrid) 1px,transparent 1px);background-size:22px 22px;overflow:hidden}
+figure.ws figcaption{font-family:var(--f-display);font-stretch:88%;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+.canvas{overflow-x:auto;padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:16px}
+.blk{font-family:"Source Sans 3",Arial,sans-serif;font-size:13.5px;font-weight:600;color:#fff;line-height:1.25;-webkit-font-smoothing:antialiased}
+.bs,.bc{display:block;border-radius:5px;width:max-content;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
+.bs{padding:5px 8px;display:flex;align-items:center;gap:5px;flex-wrap:nowrap}
+.bs.args{display:grid;grid-template-columns:auto auto;column-gap:6px;row-gap:3px;align-items:center}
+.bs.args .gl{text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:5px;white-space:nowrap}
+.bs.args .gv{display:flex}
+.bc{padding:0}
+.bc .sh{padding:5px 8px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.bc .row{display:flex;align-items:stretch}
+.bc .ml{padding:6px 8px 0 10px;min-width:16px;white-space:nowrap}
+.bc .body{background:var(--ws);border-radius:4px 0 0 4px;padding:3px 3px 3px 0;min-width:60px;min-height:18px;display:flex;flex-direction:column;gap:2px;margin-right:0}
+.bc .foot{height:9px}
+.bv{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:9px 4px 4px 9px;white-space:nowrap;box-shadow:inset 0 -1px 0 rgba(0,0,0,.2)}
+.bv.stk{align-items:flex-start;padding:4px 6px 4px 8px}
+.bv .col{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.t{white-space:pre}
+.dd{background:rgba(255,255,255,.22);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.dd i{font-style:normal;font-size:9px;margin-left:3px;opacity:.85}
+.lbl{font-style:italic;font-weight:600;opacity:.95}
+.param{background:#E58A3B;border-radius:9px;padding:1px 7px;color:#fff}
+.str{background:#fff;color:#7B1E44;border-radius:4px;padding:0 5px;font-weight:600}
+.sw{display:inline-block;width:22px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,.7)}
+.c-event{background:#B18E35}.c-control{background:#C29B2E}.c-logic{background:#5E9E33}.c-math{background:#3F71B5}
+.c-text{background:#B32D5E}.c-list{background:#3E9BC9}.c-color{background:#6E6E6E}.c-var{background:#D05F2D}
+.c-proc{background:#7C5385}.c-method{background:#7C5385}.c-set{background:#266643}.c-get{background:#3E9068}.c-comp{background:#3E9068}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:14px;margin:10px 0 4px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
+
+/* ===== Maquetes de tela (cores fixas: são as cores do app) ===== */
+.mock-row{display:grid;grid-template-columns:1fr;gap:22px;margin:18px 0;align-items:start}
+@media(min-width:720px){.mock-row{grid-template-columns:280px minmax(0,1fr)}}
+.phone{width:100%;max-width:280px;border-radius:30px;background:#0B0F16;padding:10px;box-shadow:0 10px 30px rgba(10,20,40,.18)}
+.scr{border-radius:21px;overflow:hidden;background:#0F1B2D;color:#fff;font-family:Roboto,"Source Sans 3",Arial,sans-serif;min-height:500px;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;font-size:10px;padding:6px 14px 2px;color:#C9D3E2;background:#09121F}
+.ab{background:#09121F;padding:8px 14px 10px;font-size:15px;font-weight:600}
+.sc{padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center;flex:1}
+.m-t{font-size:22px;font-weight:800;text-align:center}
+.m-s{font-size:12px;color:#B8C4D6;text-align:center}
+.m-card{width:100%;background:#1F3350;border-radius:8px;padding:9px;font-size:11.5px;text-align:center;color:#fff}
+.m-warn{width:100%;color:#F4A261;font-size:11px;text-align:center}
+.m-btn{width:100%;border-radius:8px;padding:11px 6px;font-size:12.5px;font-weight:700;text-align:center;color:#fff;background:#1F3350}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%}
+.m-sos{background:#D62828}.m-big{font-size:22px;padding:22px 6px;letter-spacing:.06em}
+.m-circle{width:132px;height:132px;border-radius:50%;background:#D62828;display:grid;place-items:center;font-size:34px;font-weight:900;box-shadow:0 0 0 7px rgba(214,40,40,.25)}
+.m-panel{width:100%;border-radius:8px;padding:12px 8px;text-align:center;background:#2A9D8F}
+.m-panel .s1{font-size:16px;font-weight:800}.m-panel .s2{font-size:30px;font-weight:900;line-height:1.1}.m-panel .s3{font-size:11px}
+.m-amber{background:#F4A261;color:#0F1B2D}
+.m-small{font-size:10.5px;color:#B8C4D6;text-align:center}
+.m-input{width:100%;background:#fff;color:#7C8796;border-radius:5px;padding:8px;font-size:11.5px}
+.m-list{width:100%;background:#16253B;border-radius:6px;font-size:11px}
+.m-list div{padding:8px;border-bottom:1px solid #263B5A}
+.m-list div:last-child{border-bottom:0}
+.m-chk{width:100%;display:flex;gap:8px;align-items:center;font-size:11.5px;padding:3px 0}
+.m-chk i{width:14px;height:14px;border:2px solid #B8C4D6;border-radius:3px;flex:none}
+.m-chk i.on{background:#2A9D8F;border-color:#2A9D8F}
+.m-bar{width:100%;height:8px;border-radius:4px;background:#33465F;overflow:hidden}
+.m-bar b{display:block;height:100%;width:50%;background:#2A9D8F}
+.m-coord{width:100%;background:#1F3350;border-radius:8px;padding:10px;font-size:12px;font-family:var(--f-mono)}
+.tree{font-family:var(--f-mono);font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;white-space:pre;line-height:1.55;margin:0}
+.tree .k{color:var(--muted)}
+.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto}
+.pal{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.pal div{display:flex;align-items:center;gap:8px;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.pal i{width:22px;height:22px;border-radius:5px;display:inline-block;border:1px solid var(--line)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Índice">
+  <b>Começo</b>
+  <a href="#visao">Visão geral</a>
+  <a href="#preparar">Parte 0 · Preparar o projeto</a>
+  <b>Parte 1 · Blocos</b>
+  <a href="#b-comum">Procedimento comum</a>
+  <a href="#b-menu">Screen1 (menu)</a>
+  <a href="#b-sos">TelaSOS</a>
+  <a href="#b-loc">TelaLocalizacao</a>
+  <a href="#b-alertas">TelaAlertas</a>
+  <a href="#b-check">TelaChecklist</a>
+  <a href="#b-contatos">TelaContatos</a>
+  <a href="#b-hist">TelaHistorico</a>
+  <b>Parte 2 · Design</b>
+  <a href="#d-padrao">Padrão visual</a>
+  <a href="#d-menu">Screen1</a>
+  <a href="#d-sos">TelaSOS</a>
+  <a href="#d-loc">TelaLocalizacao</a>
+  <a href="#d-alertas">TelaAlertas</a>
+  <a href="#d-check">TelaChecklist</a>
+  <a href="#d-contatos">TelaContatos</a>
+  <a href="#d-hist">TelaHistorico</a>
+  <b>Parte 3</b>
+  <a href="#teste">Testar no celular</a>
+  <a href="#requisitos">Requisitos atendidos</a>
+  <a href="#glossario">Glossário EN → PT</a>
+</nav>
+
+<main>
+<header class="top">
+  <div class="eyebrow">MIT App Inventor · Passo a passo</div>
+  <h1>PAM Segurança — Assistente de Segurança Pessoal</h1>
+  <p class="lead">Guia completo para montar o app: primeiro todos os blocos (programação) de cada tela, depois o design (componentes, cores e propriedades), e por fim os testes no celular.</p>
+</header>
+
+<h2 id="visao"><span class="part">Começo</span>Visão geral do app</h2>
+<p>O app tem <b>7 telas</b>: um menu (Screen1) e 6 telas funcionais. O requisito pede no mínimo 4, então sobra margem.</p>
+<pre class="mermaid">
+flowchart LR
+  M["Screen1<br/>Menu"] --> S["TelaSOS<br/>botão + contagem"]
+  M --> L["TelaLocalizacao<br/>GPS + mapa"]
+  M --> A["TelaAlertas<br/>sirene, vibração, luz"]
+  M --> C["TelaChecklist<br/>itens + progresso"]
+  M --> K["TelaContatos<br/>contatos de confiança"]
+  M --> H["TelaHistorico<br/>eventos da sessão"]
+</pre>
+
+<h4>Como o histórico passa de uma tela para outra</h4>
+<p>No App Inventor, cada tela tem as próprias variáveis: uma variável global da TelaSOS não existe na TelaHistorico. Para ter um único histórico, o app faz assim:</p>
+<ol>
+  <li>Cada tela guarda o histórico numa <b>lista na memória</b> (<code>global historico</code>).</li>
+  <li>Ao registrar um evento, a tela salva essa lista no <b>TinyDB</b> com a etiqueta <code>historico</code>. Todas as telas usam o mesmo TinyDB (Namespace <code>PAM</code>), então todas enxergam a mesma lista.</li>
+  <li>Quando o app abre, a Screen1 apaga <code>historico</code> e <code>totalSOS</code>. Assim, o histórico vale só para a <b>sessão atual</b>, como o requisito pede. Os contatos de confiança continuam salvos.</li>
+</ol>
+<p>Cada evento é uma lista com 3 itens: <code>[data, hora, tipo]</code>, por exemplo <code>["09/10/2026", "14:32:10", "SOS acionado"]</code>.</p>
+
+<h2 id="preparar"><span class="part">Parte 0</span>Preparar o projeto (faça isto antes dos blocos)</h2>
+<div class="note key"><b>Por que esta parte vem antes.</b> No App Inventor, o bloco <code>when BotaoSOS.Click</code> só aparece no editor depois que o botão <code>BotaoSOS</code> existe no Designer. Então, para cada tela, arraste e <b>renomeie</b> os componentes da tabela abaixo. Não precisa ajustar cores e tamanhos agora: isso fica para a Parte 2.</div>
+<ol class="steps">
+  <li>Acesse <a href="https://ai2.appinventor.mit.edu" target="_blank" rel="noopener">ai2.appinventor.mit.edu</a> e entre com sua conta Google.</li>
+  <li>Clique em <b>Projects → Start new project</b> e dê o nome <code>PAMSeguranca</code> (sem espaço nem acento).</li>
+  <li>Clique em <b>Add Screen…</b> (barra superior) e crie, uma por vez: <code>TelaSOS</code>, <code>TelaLocalizacao</code>, <code>TelaAlertas</code>, <code>TelaChecklist</code>, <code>TelaContatos</code>, <code>TelaHistorico</code>.</li>
+  <li>No painel <b>Media</b> (embaixo, à esquerda), clique em <b>Upload File…</b> e envie o arquivo de som <code>sirene.wav</code> (está na pasta <code>assets/</code> do repositório; qualquer som de sirene em .mp3 ou .wav também serve).</li>
+  <li>Em cada tela, arraste os componentes abaixo. Para renomear, selecione o componente na árvore <b>Components</b> e clique em <b>Rename</b>.</li>
+</ol>
+
+<div class="tbl"><table>
+<thead><tr><th>Tela</th><th>Componentes visíveis (paleta → nome)</th><th>Não visíveis</th></tr></thead>
+<tbody>
+<tr><td><code>Screen1</code></td><td>Label → <code>LabelTitulo</code>, <code>LabelSubtitulo</code>, <code>LabelResumo</code>, <code>LabelAviso</code>, <code>LabelRodape</code><br>Button → <code>BotaoSOS</code>, <code>BotaoLocalizacao</code>, <code>BotaoAlertas</code>, <code>BotaoContatos</code>, <code>BotaoChecklist</code>, <code>BotaoHistorico</code><br>HorizontalArrangement → <code>Linha1</code>, <code>Linha2</code>, <code>Linha3</code></td><td>TinyDB → <code>TinyDB1</code></td></tr>
+<tr><td><code>TelaSOS</code></td><td>VerticalArrangement → <code>ArranjoPainel</code> (dentro dele: Label <code>LabelStatus</code>, <code>LabelContagem</code>, <code>LabelMensagem</code>)<br>Button → <code>BotaoSOS</code>, <code>BotaoCancelar</code>, <code>BotaoVoltar</code><br>Label → <code>LabelInstrucao</code>, <code>LabelAcionamentos</code></td><td>Notifier <code>Notifier1</code>, Clock <code>Clock1</code>, Sound <code>Sound1</code>, TinyDB <code>TinyDB1</code></td></tr>
+<tr><td><code>TelaLocalizacao</code></td><td>Label → <code>LabelStatusGPS</code>, <code>LabelLatitude</code>, <code>LabelLongitude</code><br>Button → <code>BotaoObterLocalizacao</code>, <code>BotaoAbrirMapa</code>, <code>BotaoVoltar</code></td><td>LocationSensor <code>LocationSensor1</code>, ActivityStarter <code>ActivityStarter1</code>, Notifier <code>Notifier1</code>, Clock <code>Clock1</code>, TinyDB <code>TinyDB1</code></td></tr>
+<tr><td><code>TelaAlertas</code></td><td>VerticalArrangement → <code>ArranjoPrincipal</code> (dentro: Label <code>LabelStatusAlerta</code>, Button <code>BotaoSirene</code>, <code>BotaoLanterna</code>, <code>BotaoPararTudo</code>, <code>BotaoVoltar</code>)<br>Button → <code>BotaoLuz</code> (fora do arranjo)</td><td>Player <code>Player1</code>, Clock <code>Clock1</code>, Notifier <code>Notifier1</code>, TinyDB <code>TinyDB1</code></td></tr>
+<tr><td><code>TelaChecklist</code></td><td>Label → <code>LabelProgresso</code><br>Slider → <code>Slider1</code><br>CheckBox → <code>CheckBox1</code> … <code>CheckBox6</code><br>Button → <code>BotaoReiniciar</code>, <code>BotaoVoltar</code></td><td>Notifier <code>Notifier1</code>, Clock <code>Clock1</code>, TinyDB <code>TinyDB1</code></td></tr>
+<tr><td><code>TelaContatos</code></td><td>TextBox → <code>TextBoxNome</code>, <code>TextBoxTelefone</code><br>Button → <code>BotaoAdicionar</code>, <code>BotaoVoltar</code><br>Label → <code>LabelInfo</code><br>ListView → <code>ListViewContatos</code></td><td>Notifier <code>Notifier1</code>, Clock <code>Clock1</code>, TinyDB <code>TinyDB1</code></td></tr>
+<tr><td><code>TelaHistorico</code></td><td>Label → <code>LabelTotalSOS</code>, <code>LabelTotalEventos</code>, <code>LabelVazio</code><br>ListView → <code>ListViewHistorico</code><br>Button → <code>BotaoLimpar</code>, <code>BotaoVoltar</code></td><td>Notifier <code>Notifier1</code>, TinyDB <code>TinyDB1</code></td></tr>
+</tbody></table></div>
+<div class="note warn"><b>Atenção a dois detalhes.</b> (1) Em <b>todas</b> as telas, selecione o <code>TinyDB1</code> e mude a propriedade <b>Namespace</b> para <code>PAM</code>. Sem isso as telas não compartilham o histórico. (2) Os nomes precisam ser exatamente iguais aos da tabela, inclusive maiúsculas, para os blocos baterem com as imagens.</div>
+
+<!-- ===================================================== PARTE 1 -->
+<h2 id="b-comum"><span class="part">Parte 1 · Blocos</span>Como ler as imagens e o procedimento comum</h2>
+<p>Clique em <b>Blocks</b> (canto superior direito) para abrir o editor de cada tela. As cores das imagens são as mesmas do App Inventor, então a cor diz em qual gaveta procurar o bloco:</p>
+<div class="legend">
+  <span><i class="c-event"></i>Evento (when…): clique no componente</span>
+  <span><i class="c-control"></i>Control</span>
+  <span><i class="c-logic"></i>Logic</span>
+  <span><i class="c-math"></i>Math</span>
+  <span><i class="c-text"></i>Text</span>
+  <span><i class="c-list"></i>Lists</span>
+  <span><i class="c-color"></i>Colors</span>
+  <span><i class="c-var"></i>Variables</span>
+  <span><i class="c-proc"></i>Procedures / call (roxo)</span>
+  <span><i class="c-set"></i>set (verde-escuro)</span>
+  <span><i class="c-get"></i>propriedade (verde-claro)</span>
+</div>
+<p>As imagens usam os nomes em <b>inglês</b>, o idioma padrão do App Inventor. Se o seu estiver em português, troque o idioma no menu do globo, no topo, ou use o <a href="#glossario">glossário</a> no fim da página.</p>
+<div class="note"><b>Dicas que economizam tempo.</b>
+<ul>
+<li><b>Texto vazio ou com valor:</b> o bloco <span class="str">“ ”</span> fica na gaveta <b>Text</b>; clique dentro dele para digitar.</li>
+<li><b>Parâmetros</b> (laranja, como <span class="param">choice</span>): passe o mouse sobre eles no bloco de evento para pegar o <code>get choice</code>.</li>
+<li><b>Mais entradas</b> em <code>join</code>, <code>make a list</code>, <code>or</code> e <code>if</code> (else if / else): clique na engrenagem azul do bloco e arraste as peças.</li>
+<li><b>Mochila (Backpack):</b> clique com o botão direito num bloco → <b>Add to Backpack</b>. Na outra tela, clique no ícone da mochila e arraste o bloco. Use isso para copiar o procedimento abaixo.</li>
+</ul></div>
+
+<h3>Procedimento <code>registrarEvento</code> (vai em 5 telas)</h3>
+<p>Este procedimento grava um evento no histórico. Ele é usado nas telas SOS, Localização, Alertas, Checklist e Contatos. Monte-o uma vez na TelaSOS e copie pela Mochila para as outras. Ele precisa que a tela tenha a variável <code>global historico</code>, um <code>Clock1</code> e um <code>TinyDB1</code>.</p>
+<figure class="ws"><figcaption>Variável do histórico + procedimento registrarEvento</figcaption><div class="canvas" data-b="comum"></div></figure>
+<p><b>O que faz:</b> (1) lê do TinyDB a lista mais recente, porque outra tela pode ter gravado eventos; (2) adiciona um item <code>[data, hora, tipo]</code> usando o relógio do celular; (3) salva a lista de volta. Para montar o <code>Clock1.FormatDateTime</code>, abra a gaveta do <code>Clock1</code>; o <code>Clock1.Now</code> fica na mesma gaveta.</p>
+
+<!-- ===== Screen1 -->
+<h3 id="b-menu">Screen1 — Menu</h3>
+<p>Ao abrir o app, zera o histórico da sessão e mostra um resumo. Cada botão abre uma tela. Quando o usuário volta de outra tela, o resumo é atualizado (<code>OtherScreenClosed</code>).</p>
+<figure class="ws"><figcaption>Screen1 · inicialização e resumo</figcaption><div class="canvas" data-b="menu1"></div></figure>
+<figure class="ws"><figcaption>Screen1 · navegação (um bloco por botão)</figcaption><div class="canvas" data-b="menu2"></div></figure>
+<div class="note"><b>Importante:</b> nas outras telas, o botão Voltar usa <code>close screen</code> e <b>nunca</b> <code>open another screen "Screen1"</code>. Abrir a Screen1 de novo rodaria o <code>Initialize</code> e apagaria o histórico.</div>
+
+<!-- ===== TelaSOS -->
+<h3 id="b-sos">TelaSOS — Botão de emergência</h3>
+<p>Fluxo: o usuário toca em SOS → confirma na janela → contagem regressiva de 5 s com botão Cancelar → alerta acionado. Cada estado tem uma cor e uma mensagem.</p>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> pronto: abre a tela (verde)
+  pronto --> pronto: toca SOS e responde "Cancelar"
+  pronto --> contagem: toca SOS e confirma (âmbar, 5…1)
+  contagem --> cancelado: toca CANCELAR (cinza)
+  contagem --> acionado: contagem chega a 0 (vermelho)
+  cancelado --> contagem: toca SOS e confirma
+  acionado --> contagem: toca SOS e confirma
+</pre>
+<h4>1. Variáveis globais</h4>
+<p>Fora de qualquer evento. As cores seguem a paleta do app (Parte 2). O bloco <code>make color</code> fica na gaveta <b>Colors</b> e já vem com um <code>make a list</code>; basta trocar os números (vermelho, verde, azul).</p>
+<figure class="ws"><figcaption>TelaSOS · variáveis</figcaption><div class="canvas" data-b="sos1"></div></figure>
+<h4>2. Procedimento mostrarEstado</h4>
+<p>Centraliza a mudança de cores e mensagens. Use o bloco <code>if</code> e, pela engrenagem, adicione 2 <code>else if</code> e 1 <code>else</code>.</p>
+<figure class="ws"><figcaption>TelaSOS · mostrarEstado (estado)</figcaption><div class="canvas" data-b="sos2"></div></figure>
+<h4>3. Abrir a tela, tocar em SOS e confirmar</h4>
+<figure class="ws"><figcaption>TelaSOS · Initialize, botão SOS e confirmação</figcaption><div class="canvas" data-b="sos3"></div></figure>
+<p>O texto testado no <code>if</code> precisa ser <b>idêntico</b> ao texto do botão 1 da janela (<code>"SIM, ACIONAR"</code>), inclusive maiúsculas e vírgula.</p>
+<h4>4. Contagem regressiva, acionamento e cancelamento</h4>
+<p>O <code>Clock1</code> dispara a cada 1000 ms. A cada disparo, diminui 1 da contagem e vibra rápido. Quando chega a 0, desliga o relógio e chama <code>acionarSOS</code>.</p>
+<figure class="ws"><figcaption>TelaSOS · Timer, acionarSOS e atualizarContador</figcaption><div class="canvas" data-b="sos4"></div></figure>
+<figure class="ws"><figcaption>TelaSOS · cancelar e voltar</figcaption><div class="canvas" data-b="sos5"></div></figure>
+<p>O <code>BackPressed</code> trata o botão Voltar do próprio Android: sem ele, o relógio poderia continuar contando depois de sair da tela.</p>
+<p>Por fim, cole aqui o <code>initialize global historico</code> e o procedimento <code>registrarEvento</code> (veja o <a href="#b-comum">procedimento comum</a>).</p>
+
+<!-- ===== TelaLocalizacao -->
+<h3 id="b-loc">TelaLocalizacao — GPS</h3>
+<p>Captura latitude e longitude, mostra na tela e abre no app de mapas. Trata quatro situações de erro: <b>GPS desligado</b>, <b>sem sinal em 15 s</b>, <b>permissão negada</b> e <b>falha ao abrir o mapa</b>.</p>
+<figure class="ws"><figcaption>TelaLocalizacao · variáveis e Initialize</figcaption><div class="canvas" data-b="loc1"></div></figure>
+<figure class="ws"><figcaption>TelaLocalizacao · botão Obter localização</figcaption><div class="canvas" data-b="loc2"></div></figure>
+<p><b>Como saber se o GPS está desligado:</b> <code>LocationSensor1.AvailableProviders</code> devolve a lista de fontes de localização ativas. Se não houver <code>"gps"</code> nem <code>"network"</code>, a localização do celular está desligada.</p>
+<figure class="ws"><figcaption>TelaLocalizacao · receber a posição e mostrar</figcaption><div class="canvas" data-b="loc3"></div></figure>
+<figure class="ws"><figcaption>TelaLocalizacao · tempo esgotado e abrir o mapa</figcaption><div class="canvas" data-b="loc4"></div></figure>
+<figure class="ws"><figcaption>TelaLocalizacao · tratamento de erros e voltar</figcaption><div class="canvas" data-b="loc5"></div></figure>
+<p>Cole também o <code>initialize global historico</code> e o <code>registrarEvento</code>.</p>
+
+<!-- ===== TelaAlertas -->
+<h3 id="b-alertas">TelaAlertas — Sirene e sinalização</h3>
+<p>A sirene toca em loop. Enquanto toca, o <code>Clock1</code> (a cada 500 ms) pisca o fundo em vermelho e faz o celular vibrar. A lanterna usa a <b>tela inteira branca</b>, que funciona em qualquer celular (veja a observação no fim desta seção). Um botão interrompe tudo.</p>
+<figure class="ws"><figcaption>TelaAlertas · variáveis</figcaption><div class="canvas" data-b="al1"></div></figure>
+<figure class="ws"><figcaption>TelaAlertas · sirene e pisca-vibra</figcaption><div class="canvas" data-b="al2"></div></figure>
+<figure class="ws"><figcaption>TelaAlertas · lanterna de tela</figcaption><div class="canvas" data-b="al3"></div></figure>
+<figure class="ws"><figcaption>TelaAlertas · parar alertas, voltar e erros</figcaption><div class="canvas" data-b="al4"></div></figure>
+<div class="note"><b>Sobre a lanterna de LED.</b> O App Inventor não tem um componente nativo para o LED da câmera. O requisito diz "se o dispositivo e os componentes disponíveis permitirem"; por isso o guia usa a lanterna de tela, que sempre funciona. Na apresentação, explique essa escolha. Se o professor exigir o LED, procure uma extensão gratuita de lanterna (<i>flashlight extension</i>) no fórum <a href="https://community.appinventor.mit.edu" target="_blank" rel="noopener">community.appinventor.mit.edu</a>, importe o arquivo .aix em <b>Palette → Extension → Import extension</b> e chame o método de ligar dentro do <code>BotaoLanterna.Click</code>.</div>
+<p>Cole também o <code>initialize global historico</code> e o <code>registrarEvento</code>.</p>
+
+<!-- ===== TelaChecklist -->
+<h3 id="b-check">TelaChecklist — Procedimentos antes de sair</h3>
+<p>Seis caixas de marcar. O progresso é <b>calculado por programação</b>: um laço conta quantas estão marcadas e calcula a porcentagem, que move a barra (<code>Slider1</code>) e atualiza o texto.</p>
+<figure class="ws"><figcaption>TelaChecklist · variáveis, Initialize e evento de qualquer caixa</figcaption><div class="canvas" data-b="ch1"></div></figure>
+<p>O bloco <code>when any CheckBox.Changed</code> fica no fim da lista de gavetas, em <b>Any component → Any CheckBox</b>. Ele vale para as 6 caixas de uma vez. Os blocos verdes <code>CheckBox1</code> … <code>CheckBox6</code> ficam no fim da gaveta de cada caixa.</p>
+<figure class="ws"><figcaption>TelaChecklist · atualizarProgresso</figcaption><div class="canvas" data-b="ch2"></div></figure>
+<p>Os blocos <code>CheckBox.Checked of component</code> (ler e alterar) também estão em <b>Any component → Any CheckBox</b>. Use <code>initialize local … in</code> da gaveta Variables (a versão com encaixe de comandos).</p>
+<figure class="ws"><figcaption>TelaChecklist · reiniciar e voltar</figcaption><div class="canvas" data-b="ch3"></div></figure>
+<p>Cole também o <code>initialize global historico</code> e o <code>registrarEvento</code>.</p>
+
+<!-- ===== TelaContatos -->
+<h3 id="b-contatos">TelaContatos — Contatos de confiança</h3>
+<p>É aqui que está a principal <b>validação de campos</b>: nome obrigatório, telefone só com números e 10 ou 11 dígitos, sem repetir, no máximo 5 contatos. Toque num contato da lista para removê-lo. Diferente do histórico, os contatos ficam salvos entre sessões.</p>
+<figure class="ws"><figcaption>TelaContatos · variáveis, Initialize e atualizarLista</figcaption><div class="canvas" data-b="ct1"></div></figure>
+<figure class="ws"><figcaption>TelaContatos · adicionar com validação</figcaption><div class="canvas" data-b="ct2"></div></figure>
+<figure class="ws"><figcaption>TelaContatos · remover e voltar</figcaption><div class="canvas" data-b="ct3"></div></figure>
+<p>Cole também o <code>initialize global historico</code> e o <code>registrarEvento</code>.</p>
+
+<!-- ===== TelaHistorico -->
+<h3 id="b-hist">TelaHistorico — Eventos da sessão</h3>
+<p>Monta uma lista de textos a partir da lista de eventos, com o mais recente no topo, e mostra os totais. O botão Limpar pede confirmação.</p>
+<figure class="ws"><figcaption>TelaHistorico · variável, Initialize e atualizarTela</figcaption><div class="canvas" data-b="hi1"></div></figure>
+<figure class="ws"><figcaption>TelaHistorico · limpar com confirmação e voltar</figcaption><div class="canvas" data-b="hi2"></div></figure>
+<p>Esta tela não registra eventos, então não precisa do <code>registrarEvento</code> nem de Clock.</p>
+
+<!-- ===================================================== PARTE 2 -->
+<h2 id="d-padrao"><span class="part">Parte 2 · Design</span>Padrão visual (vale para todas as telas)</h2>
+<p>Usar as mesmas cores, tamanhos e posições em todas as telas atende ao requisito de interface consistente. Use esta paleta. No Designer, em qualquer propriedade de cor, escolha <b>Custom…</b> e digite o código.</p>
+<div class="pal">
+  <div><i style="background:#0F1B2D"></i><span><b>Fundo</b> <code>#0F1B2D</code></span></div>
+  <div><i style="background:#1F3350"></i><span><b>Cartões e botões</b> <code>#1F3350</code></span></div>
+  <div><i style="background:#D62828"></i><span><b>SOS / perigo</b> <code>#D62828</code></span></div>
+  <div><i style="background:#2A9D8F"></i><span><b>Sucesso / pronto</b> <code>#2A9D8F</code></span></div>
+  <div><i style="background:#F4A261"></i><span><b>Atenção</b> <code>#F4A261</code></span></div>
+  <div><i style="background:#B8C4D6"></i><span><b>Texto secundário</b> <code>#B8C4D6</code></span></div>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Regra</th><th>Como aplicar</th></tr></thead>
+<tbody>
+<tr><td>Propriedades de toda tela</td><td><code>BackgroundColor</code> #0F1B2D · <code>AlignHorizontal</code> Center · <code>Scrollable</code> ✔ · <code>ScreenOrientation</code> Portrait</td></tr>
+<tr><td>Responsividade</td><td>Larguras em <b>Fill parent</b> ou <b>percent</b>, nunca em pixels fixos (exceto o botão SOS redondo). Na Screen1, <code>Sizing</code> = Responsive.</td></tr>
+<tr><td>Botões comuns</td><td><code>BackgroundColor</code> #1F3350 · <code>FontSize</code> 16 · <code>FontBold</code> ✔ · <code>Shape</code> rounded · <code>TextColor</code> White · <code>Width</code> Fill parent · <code>Height</code> 55 px</td></tr>
+<tr><td>Botão Voltar</td><td>Sempre o último da tela, texto <code>← Voltar ao menu</code>, mesmo estilo dos botões comuns</td></tr>
+<tr><td>Títulos de tela</td><td>Propriedade <code>Title</code> de cada tela (ex.: "Botão SOS"). Aparece na barra superior.</td></tr>
+<tr><td>Espaçamento</td><td>O App Inventor não tem margem. Coloque um <b>Label vazio</b> com <code>Height</code> 10 px entre grupos (nas árvores abaixo: <code>Espaco…</code>).</td></tr>
+</tbody></table></div>
+<p><b>Componentes só de visual.</b> As árvores abaixo trazem alguns componentes que não aparecem nos blocos (<code>Espaco…</code>, <code>LabelIcone</code>, <code>LabelDica</code>, <code>ArranjoCoordenadas</code>, <code>LinhaTotais</code>). Adicione-os agora e arraste os componentes existentes para dentro dos arranjos, seguindo a ordem da árvore.</p>
+<p>Na <b>Screen1</b>, defina também: <code>AppName</code> PAM Segurança · <code>Title</code> PAM Segurança · <code>Theme</code> Device Default · <code>PrimaryColor</code> #0F1B2D · <code>PrimaryColorDark</code> #09121F · <code>AccentColor</code> #D62828 · <code>VersionName</code> 1.0 · <code>Icon</code> uma imagem de escudo, se quiser. As cores de tema valem para o app todo.</p>
+
+<!-- Screen1 design -->
+<h3 id="d-menu">Screen1 — Menu</h3>
+<div class="mock-row">
+  <div class="phone" role="img" aria-label="Maquete da tela de menu"><div class="scr">
+    <div class="sb"><span>14:32</span><span>▾ ▮ 87%</span></div>
+    <div class="ab">PAM Segurança</div>
+    <div class="sc">
+      <div class="m-t">🛡️ PAM Segurança</div>
+      <div class="m-s">Assistente de Segurança Pessoal</div>
+      <div class="m-card">Acionamentos de SOS na sessão: 0<br>Contatos de confiança: 2</div>
+      <div class="m-btn m-sos m-big">🚨 SOS</div>
+      <div class="m-grid">
+        <div class="m-btn">📍 Localização</div><div class="m-btn">🔊 Alertas</div>
+        <div class="m-btn">👥 Contatos</div><div class="m-btn">✅ Checklist</div>
+        <div class="m-btn">📋 Histórico</div><div class="m-btn" style="visibility:hidden">.</div>
+      </div>
+      <div class="m-small" style="margin-top:auto">Simulação educativa · Emergência real: ligue 190</div>
+    </div>
+  </div></div>
+  <pre class="tree">Screen1
+├─ LabelTitulo
+├─ LabelSubtitulo
+├─ Espaco1          <span class="k">(Label vazio)</span>
+├─ LabelResumo
+├─ LabelAviso       <span class="k">(Visible desmarcado)</span>
+├─ Espaco2
+├─ BotaoSOS
+├─ Espaco3
+├─ Linha1           <span class="k">(HorizontalArrangement)</span>
+│  ├─ BotaoLocalizacao
+│  ├─ EspacoH1      <span class="k">(Label, Width 3 percent)</span>
+│  └─ BotaoAlertas
+├─ Espaco4
+├─ Linha2
+│  ├─ BotaoContatos
+│  ├─ EspacoH2
+│  └─ BotaoChecklist
+├─ Espaco5
+├─ Linha3
+│  └─ BotaoHistorico
+├─ LabelRodape
+└─ TinyDB1          <span class="k">(não visível)</span></pre>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Componente</th><th>Propriedades</th></tr></thead>
+<tbody>
+<tr><td><code>LabelTitulo</code></td><td>Text <code>🛡️ PAM Segurança</code> · FontSize 28 · FontBold ✔ · TextColor White · TextAlignment center · Width Fill parent</td></tr>
+<tr><td><code>LabelSubtitulo</code></td><td>Text <code>Assistente de Segurança Pessoal</code> · FontSize 15 · TextColor #B8C4D6 · TextAlignment center</td></tr>
+<tr><td><code>LabelResumo</code></td><td>Width Fill parent · BackgroundColor #1F3350 · TextColor White · FontSize 15 · TextAlignment center · Text vazio (preenchido pelos blocos)</td></tr>
+<tr><td><code>LabelAviso</code></td><td>Text <code>⚠ Cadastre pelo menos 1 contato de confiança</code> · TextColor #F4A261 · FontSize 14 · Visible ☐</td></tr>
+<tr><td><code>BotaoSOS</code></td><td>Text <code>🚨 SOS</code> · BackgroundColor #D62828 · FontSize 34 · FontBold ✔ · Shape rounded · Width Fill parent · Height 110 px</td></tr>
+<tr><td><code>Linha1</code>, <code>Linha2</code>, <code>Linha3</code></td><td>Width Fill parent · AlignHorizontal Center</td></tr>
+<tr><td>6 botões do menu</td><td>Estilo de botão comum, mas Width <b>Fill parent</b> (dentro da linha dividem o espaço igualmente). Textos: <code>📍 Localização</code>, <code>🔊 Alertas</code>, <code>👥 Contatos</code>, <code>✅ Checklist</code>, <code>📋 Histórico</code></td></tr>
+<tr><td><code>Espaco…</code> / <code>EspacoH…</code></td><td>Label com Text vazio · Height 10 px (verticais) · Width 3 percent (entre botões)</td></tr>
+<tr><td><code>LabelRodape</code></td><td>Text <code>Simulação educativa · Emergência real: ligue 190</code> · FontSize 12 · TextColor #B8C4D6</td></tr>
+<tr><td><code>TinyDB1</code></td><td>Namespace <code>PAM</code></td></tr>
+</tbody></table></div>
+
+<!-- TelaSOS design -->
+<h3 id="d-sos">TelaSOS</h3>
+<div class="mock-row">
+  <div class="phone" role="img" aria-label="Maquete da tela SOS durante a contagem"><div class="scr">
+    <div class="sb"><span>14:33</span><span>▾ ▮ 87%</span></div>
+    <div class="ab">Botão SOS</div>
+    <div class="sc">
+      <div class="m-panel" style="background:#F4A261;color:#0F1B2D"><div class="s1">Acionando em…</div><div class="s2">3</div><div class="s3">Toque em CANCELAR se foi engano</div></div>
+      <div class="m-circle" style="opacity:.55">SOS</div>
+      <div class="m-small">Toque no botão. Você terá 5 segundos para cancelar.</div>
+      <div class="m-btn m-amber">✋ CANCELAR</div>
+      <div class="m-small">Acionamentos nesta sessão: 1</div>
+      <div class="m-btn" style="margin-top:auto">← Voltar ao menu</div>
+    </div>
+  </div></div>
+  <pre class="tree">TelaSOS
+├─ ArranjoPainel    <span class="k">(VerticalArrangement)</span>
+│  ├─ LabelStatus
+│  ├─ LabelContagem
+│  └─ LabelMensagem
+├─ Espaco1
+├─ BotaoSOS
+├─ LabelInstrucao
+├─ BotaoCancelar    <span class="k">(Visible desmarcado)</span>
+├─ LabelAcionamentos
+├─ Espaco2
+├─ BotaoVoltar
+├─ Notifier1
+├─ Clock1
+├─ Sound1
+└─ TinyDB1</pre>
+</div>
+<p>A maquete mostra o estado <b>contagem</b>. Nos outros estados o painel fica verde (pronto), vermelho (acionado) ou cinza (cancelado); quem troca é o procedimento <code>mostrarEstado</code>.</p>
+<div class="tbl"><table>
+<thead><tr><th>Componente</th><th>Propriedades</th></tr></thead>
+<tbody>
+<tr><td><code>TelaSOS</code></td><td>Title <code>Botão SOS</code> + padrão de tela</td></tr>
+<tr><td><code>ArranjoPainel</code></td><td>Width Fill parent · Height 160 px · BackgroundColor #2A9D8F · AlignHorizontal Center · AlignVertical Center</td></tr>
+<tr><td><code>LabelStatus</code></td><td>FontSize 22 · FontBold ✔ · TextColor White · TextAlignment center</td></tr>
+<tr><td><code>LabelContagem</code></td><td>FontSize 48 · FontBold ✔ · TextColor White · Text vazio</td></tr>
+<tr><td><code>LabelMensagem</code></td><td>FontSize 14 · TextColor White · TextAlignment center · Width Fill parent</td></tr>
+<tr><td><code>BotaoSOS</code></td><td>Text <code>SOS</code> · Shape <b>oval</b> · Width 200 px · Height 200 px · BackgroundColor #D62828 · FontSize 48 · FontBold ✔ · TextColor White</td></tr>
+<tr><td><code>LabelInstrucao</code></td><td>Text <code>Toque no botão. Você terá 5 segundos para cancelar.</code> · FontSize 13 · TextColor #B8C4D6 · TextAlignment center</td></tr>
+<tr><td><code>BotaoCancelar</code></td><td>Text <code>✋ CANCELAR</code> · BackgroundColor #F4A261 · TextColor #0F1B2D · FontSize 20 · FontBold ✔ · Width Fill parent · Height 60 px · <b>Visible ☐</b></td></tr>
+<tr><td><code>LabelAcionamentos</code></td><td>FontSize 14 · TextColor #B8C4D6</td></tr>
+<tr><td><code>BotaoVoltar</code></td><td>Text <code>← Voltar ao menu</code> · estilo comum</td></tr>
+<tr><td><code>Clock1</code></td><td>TimerInterval <b>1000</b> · TimerEnabled ☐ · TimerAlwaysFires ☐</td></tr>
+<tr><td><code>Sound1</code></td><td>MinimumInterval 100 (sem arquivo: só para vibrar)</td></tr>
+<tr><td><code>TinyDB1</code></td><td>Namespace <code>PAM</code></td></tr>
+</tbody></table></div>
+
+<!-- Localização design -->
+<h3 id="d-loc">TelaLocalizacao</h3>
+<div class="mock-row">
+  <div class="phone" role="img" aria-label="Maquete da tela de localização"><div class="scr">
+    <div class="sb"><span>14:35</span><span>▾ ▮ 86%</span></div>
+    <div class="ab">Minha localização</div>
+    <div class="sc">
+      <div class="m-t" style="font-size:40px">📍</div>
+      <div class="m-card" style="background:#2A9D8F">Localização obtida com sucesso</div>
+      <div class="m-coord">Latitude: -23.550520<br>Longitude: -46.633308</div>
+      <div class="m-btn m-sos">📡 Obter localização</div>
+      <div class="m-btn">🗺️ Abrir no mapa</div>
+      <div class="m-small">Dica: em locais abertos o GPS encontra o sinal mais rápido.</div>
+      <div class="m-btn" style="margin-top:auto">← Voltar ao menu</div>
+    </div>
+  </div></div>
+  <pre class="tree">TelaLocalizacao
+├─ LabelIcone        <span class="k">(Text 📍, FontSize 48)</span>
+├─ LabelStatusGPS
+├─ ArranjoCoordenadas <span class="k">(VerticalArrangement)</span>
+│  ├─ LabelLatitude
+│  └─ LabelLongitude
+├─ Espaco1
+├─ BotaoObterLocalizacao
+├─ BotaoAbrirMapa
+├─ LabelDica
+├─ Espaco2
+├─ BotaoVoltar
+├─ LocationSensor1
+├─ ActivityStarter1
+├─ Notifier1
+├─ Clock1
+└─ TinyDB1</pre>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Componente</th><th>Propriedades</th></tr></thead>
+<tbody>
+<tr><td><code>TelaLocalizacao</code></td><td>Title <code>Minha localização</code> + padrão de tela</td></tr>
+<tr><td><code>LabelStatusGPS</code></td><td>Width Fill parent · BackgroundColor #1F3350 · TextColor White · FontSize 15 · TextAlignment center · Height 45 px</td></tr>
+<tr><td><code>ArranjoCoordenadas</code></td><td>Width Fill parent · BackgroundColor #1F3350</td></tr>
+<tr><td><code>LabelLatitude</code>, <code>LabelLongitude</code></td><td>Text <code>Latitude: --</code> / <code>Longitude: --</code> · FontSize 18 · TextColor White · FontTypeface monospace</td></tr>
+<tr><td><code>BotaoObterLocalizacao</code></td><td>Text <code>📡 Obter localização</code> · BackgroundColor #D62828 · estilo comum</td></tr>
+<tr><td><code>BotaoAbrirMapa</code></td><td>Text <code>🗺️ Abrir no mapa</code> · estilo comum</td></tr>
+<tr><td><code>LabelDica</code></td><td>Text <code>Dica: em locais abertos o GPS encontra o sinal mais rápido.</code> · FontSize 12 · TextColor #B8C4D6</td></tr>
+<tr><td><code>LocationSensor1</code></td><td>Enabled ✔ · TimeInterval 1000 · DistanceInterval 0</td></tr>
+<tr><td><code>ActivityStarter1</code></td><td>nada a configurar (os blocos preenchem Action e DataUri)</td></tr>
+<tr><td><code>Clock1</code></td><td>TimerInterval <b>15000</b> · TimerEnabled ☐ · TimerAlwaysFires ☐</td></tr>
+</tbody></table></div>
+
+<!-- Alertas design -->
+<h3 id="d-alertas">TelaAlertas</h3>
+<div class="mock-row">
+  <div class="phone" role="img" aria-label="Maquete da tela de alertas com sirene ligada"><div class="scr" style="background:#D62828">
+    <div class="sb"><span>14:36</span><span>▾ ▮ 85%</span></div>
+    <div class="ab">Sirene e sinalização</div>
+    <div class="sc">
+      <div class="m-t" style="font-size:40px">🔊</div>
+      <div class="m-t" style="font-size:20px">SIRENE LIGADA</div>
+      <div class="m-btn" style="background:#0F1B2D">🔇 Desligar sirene</div>
+      <div class="m-btn">🔦 Lanterna de tela</div>
+      <div class="m-btn m-amber">⛔ PARAR TODOS OS ALERTAS</div>
+      <div class="m-btn" style="margin-top:auto">← Voltar ao menu</div>
+    </div>
+  </div></div>
+  <pre class="tree">TelaAlertas
+├─ ArranjoPrincipal  <span class="k">(VerticalArrangement)</span>
+│  ├─ LabelIcone
+│  ├─ LabelStatusAlerta
+│  ├─ BotaoSirene
+│  ├─ BotaoLanterna
+│  ├─ BotaoPararTudo
+│  ├─ Espaco1
+│  └─ BotaoVoltar
+├─ BotaoLuz          <span class="k">(fora do arranjo, Visible desmarcado)</span>
+├─ Player1
+├─ Clock1
+├─ Notifier1
+└─ TinyDB1</pre>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Componente</th><th>Propriedades</th></tr></thead>
+<tbody>
+<tr><td><code>TelaAlertas</code></td><td>Title <code>Sirene e sinalização</code> + padrão de tela, mas <code>Scrollable</code> ☐ (para o BotaoLuz ocupar a tela toda)</td></tr>
+<tr><td><code>ArranjoPrincipal</code></td><td>Width Fill parent · Height Fill parent · BackgroundColor #0F1B2D · AlignHorizontal Center</td></tr>
+<tr><td><code>LabelStatusAlerta</code></td><td>Text <code>Alertas desligados</code> · FontSize 22 · FontBold ✔ · TextColor White</td></tr>
+<tr><td><code>BotaoSirene</code></td><td>Text <code>🔊 Ligar sirene</code> · BackgroundColor #D62828 · estilo comum · Height 70 px</td></tr>
+<tr><td><code>BotaoLanterna</code></td><td>Text <code>🔦 Lanterna de tela</code> · estilo comum · Height 70 px</td></tr>
+<tr><td><code>BotaoPararTudo</code></td><td>Text <code>⛔ PARAR TODOS OS ALERTAS</code> · BackgroundColor #F4A261 · TextColor #0F1B2D · estilo comum · Height 70 px</td></tr>
+<tr><td><code>BotaoLuz</code></td><td>Text <code>Toque para apagar a luz</code> · BackgroundColor White · TextColor #0F1B2D · Width Fill parent · Height Fill parent · Shape default · <b>Visible ☐</b></td></tr>
+<tr><td><code>Player1</code></td><td>Source <code>sirene.wav</code> · <b>Loop ✔</b> · Volume 100 · PlayOnlyInForeground ✔</td></tr>
+<tr><td><code>Clock1</code></td><td>TimerInterval <b>500</b> · TimerEnabled ☐</td></tr>
+</tbody></table></div>
+
+<!-- Checklist design -->
+<h3 id="d-check">TelaChecklist</h3>
+<div class="mock-row">
+  <div class="phone" role="img" aria-label="Maquete do checklist com 3 de 6 itens marcados"><div class="scr">
+    <div class="sb"><span>14:38</span><span>▾ ▮ 85%</span></div>
+    <div class="ab">Checklist antes de sair</div>
+    <div class="sc" style="align-items:stretch">
+      <div class="m-card">3 de 6 itens concluídos (50%)</div>
+      <div class="m-bar"><b></b></div>
+      <div class="m-chk"><i class="on"></i>Celular com bateria carregada</div>
+      <div class="m-chk"><i class="on"></i>Contatos de confiança cadastrados</div>
+      <div class="m-chk"><i class="on"></i>GPS / localização ativado</div>
+      <div class="m-chk"><i></i>Avisei alguém do meu destino e horário</div>
+      <div class="m-chk"><i></i>Conferi o trajeto e evitei locais isolados</div>
+      <div class="m-chk"><i></i>Documentos e chaves comigo</div>
+      <div class="m-btn">🔄 Reiniciar lista</div>
+      <div class="m-btn" style="margin-top:auto">← Voltar ao menu</div>
+    </div>
+  </div></div>
+  <pre class="tree">TelaChecklist
+├─ LabelProgresso
+├─ Slider1
+├─ Espaco1
+├─ CheckBox1
+├─ CheckBox2
+├─ CheckBox3
+├─ CheckBox4
+├─ CheckBox5
+├─ CheckBox6
+├─ Espaco2
+├─ BotaoReiniciar
+├─ BotaoVoltar
+├─ Notifier1
+├─ Clock1
+└─ TinyDB1</pre>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Componente</th><th>Propriedades</th></tr></thead>
+<tbody>
+<tr><td><code>TelaChecklist</code></td><td>Title <code>Checklist antes de sair</code> + padrão de tela</td></tr>
+<tr><td><code>LabelProgresso</code></td><td>Width Fill parent · BackgroundColor #1F3350 · TextColor White · FontSize 16 · FontBold ✔ · TextAlignment center · Height 45 px</td></tr>
+<tr><td><code>Slider1</code> (barra)</td><td>Width Fill parent · MinValue 0 · MaxValue 100 · ThumbPosition 0 · <b>ThumbEnabled ☐</b> (o usuário não arrasta) · ColorLeft #2A9D8F · ColorRight #33465F</td></tr>
+<tr><td><code>CheckBox1</code> … <code>CheckBox6</code></td><td>Width Fill parent · FontSize 16 · TextColor White · Texts: <code>Celular com bateria carregada</code> · <code>Contatos de confiança cadastrados</code> · <code>GPS / localização ativado</code> · <code>Avisei alguém do meu destino e horário</code> · <code>Conferi o trajeto e evitei locais isolados</code> · <code>Documentos e chaves comigo</code></td></tr>
+<tr><td><code>BotaoReiniciar</code></td><td>Text <code>🔄 Reiniciar lista</code> · estilo comum</td></tr>
+<tr><td><code>Clock1</code></td><td>TimerEnabled ☐ (usado só para data e hora)</td></tr>
+</tbody></table></div>
+
+<!-- Contatos design -->
+<h3 id="d-contatos">TelaContatos</h3>
+<div class="mock-row">
+  <div class="phone" role="img" aria-label="Maquete da tela de contatos"><div class="scr">
+    <div class="sb"><span>14:40</span><span>▾ ▮ 84%</span></div>
+    <div class="ab">Contatos de confiança</div>
+    <div class="sc">
+      <div class="m-input">Nome do contato</div>
+      <div class="m-input">Telefone com DDD (só números)</div>
+      <div class="m-btn" style="background:#2A9D8F">➕ Adicionar contato</div>
+      <div class="m-small">Contatos cadastrados: 2 de 5 · toque para remover</div>
+      <div class="m-list"><div>Mãe — 11987654321</div><div>Carlos — 1133224455</div></div>
+      <div class="m-btn" style="margin-top:auto">← Voltar ao menu</div>
+    </div>
+  </div></div>
+  <pre class="tree">TelaContatos
+├─ TextBoxNome
+├─ TextBoxTelefone
+├─ BotaoAdicionar
+├─ LabelInfo
+├─ ListViewContatos
+├─ Espaco1
+├─ BotaoVoltar
+├─ Notifier1
+├─ Clock1
+└─ TinyDB1</pre>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Componente</th><th>Propriedades</th></tr></thead>
+<tbody>
+<tr><td><code>TelaContatos</code></td><td>Title <code>Contatos de confiança</code> + padrão de tela</td></tr>
+<tr><td><code>TextBoxNome</code></td><td>Hint <code>Nome do contato</code> · Width Fill parent · FontSize 16 · Text vazio</td></tr>
+<tr><td><code>TextBoxTelefone</code></td><td>Hint <code>Telefone com DDD (só números)</code> · <b>NumbersOnly ✔</b> · Width Fill parent · FontSize 16</td></tr>
+<tr><td><code>BotaoAdicionar</code></td><td>Text <code>➕ Adicionar contato</code> · BackgroundColor #2A9D8F · estilo comum</td></tr>
+<tr><td><code>LabelInfo</code></td><td>FontSize 13 · TextColor #B8C4D6</td></tr>
+<tr><td><code>ListViewContatos</code></td><td>Width Fill parent · Height 250 px · BackgroundColor #16253B · TextColor White · TextSize 18</td></tr>
+<tr><td><code>Clock1</code></td><td>TimerEnabled ☐</td></tr>
+</tbody></table></div>
+
+<!-- Histórico design -->
+<h3 id="d-hist">TelaHistorico</h3>
+<div class="mock-row">
+  <div class="phone" role="img" aria-label="Maquete da tela de histórico"><div class="scr">
+    <div class="sb"><span>14:42</span><span>▾ ▮ 84%</span></div>
+    <div class="ab">Histórico da sessão</div>
+    <div class="sc">
+      <div class="m-grid"><div class="m-card" style="background:#D62828">SOS<br><b style="font-size:20px">1</b></div><div class="m-card">Eventos<br><b style="font-size:20px">6</b></div></div>
+      <div class="m-list">
+        <div>09/10/2026 às 14:40:12 — Contato cadastrado</div>
+        <div>09/10/2026 às 14:38:51 — Checklist concluído</div>
+        <div>09/10/2026 às 14:36:02 — Sirene ligada</div>
+        <div>09/10/2026 às 14:35:20 — Localização capturada</div>
+        <div>09/10/2026 às 14:33:47 — SOS acionado</div>
+      </div>
+      <div class="m-btn m-amber">🗑️ Limpar histórico</div>
+      <div class="m-btn" style="margin-top:auto">← Voltar ao menu</div>
+    </div>
+  </div></div>
+  <pre class="tree">TelaHistorico
+├─ LinhaTotais       <span class="k">(HorizontalArrangement)</span>
+│  ├─ LabelTotalSOS
+│  ├─ EspacoH1
+│  └─ LabelTotalEventos
+├─ LabelVazio
+├─ ListViewHistorico
+├─ Espaco1
+├─ BotaoLimpar
+├─ BotaoVoltar
+├─ Notifier1
+└─ TinyDB1</pre>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Componente</th><th>Propriedades</th></tr></thead>
+<tbody>
+<tr><td><code>TelaHistorico</code></td><td>Title <code>Histórico da sessão</code> + padrão de tela</td></tr>
+<tr><td><code>LinhaTotais</code></td><td>Width Fill parent</td></tr>
+<tr><td><code>LabelTotalSOS</code></td><td>Width Fill parent · BackgroundColor #D62828 · TextColor White · FontSize 15 · FontBold ✔ · TextAlignment center · Height 60 px</td></tr>
+<tr><td><code>LabelTotalEventos</code></td><td>igual, com BackgroundColor #1F3350</td></tr>
+<tr><td><code>LabelVazio</code></td><td>Text <code>Nenhum evento registrado nesta sessão.</code> · TextColor #B8C4D6 · FontSize 14</td></tr>
+<tr><td><code>ListViewHistorico</code></td><td>Width Fill parent · Height 320 px · BackgroundColor #16253B · TextColor White · TextSize 15</td></tr>
+<tr><td><code>BotaoLimpar</code></td><td>Text <code>🗑️ Limpar histórico</code> · BackgroundColor #F4A261 · TextColor #0F1B2D · estilo comum</td></tr>
+</tbody></table></div>
+
+<!-- ===================================================== PARTE 3 -->
+<h2 id="teste"><span class="part">Parte 3</span>Testar no celular real</h2>
+<h4>Teste rápido com o AI Companion (durante o desenvolvimento)</h4>
+<ol class="steps">
+  <li>No celular Android, instale <b>MIT AI2 Companion</b> pela Play Store.</li>
+  <li>No computador, clique em <b>Connect → AI Companion</b>. Aparece um QR code.</li>
+  <li>No celular, abra o Companion e toque em <b>scan QR code</b>. O app aparece no celular e se atualiza a cada alteração.</li>
+</ol>
+<div class="note warn"><b>Limitação do Companion:</b> a troca de telas funciona, mas às vezes a tela não se atualiza depois de uma mudança nos blocos. Se isso acontecer, volte para a Screen1 ou reconecte. GPS, vibração e som funcionam melhor no app instalado.</div>
+<h4>Gerar o APK (para a apresentação)</h4>
+<ol class="steps">
+  <li>Clique em <b>Build → Android App (.apk)</b>. Aparece um QR code e um link de download.</li>
+  <li>Leia o QR com o celular, baixe e instale. Se pedir, autorize "instalar apps de fontes desconhecidas".</li>
+  <li>Na primeira vez que abrir a TelaLocalizacao, aceite a permissão de localização.</li>
+</ol>
+<h4>Roteiro de testes (anote o resultado de cada um para a apresentação)</h4>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Teste</th><th>Resultado esperado</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>SOS → responder "Cancelar" na janela</td><td>Nada acontece, painel continua verde</td></tr>
+<tr><td>2</td><td>SOS → "SIM, ACIONAR" → tocar CANCELAR aos 3 s</td><td>Painel fica cinza, "Acionamento cancelado", evento "SOS cancelado" no histórico</td></tr>
+<tr><td>3</td><td>SOS → confirmar → esperar 5 s</td><td>Contagem 5…1, painel vermelho, vibração, contador +1</td></tr>
+<tr><td>4</td><td>SOS acionado sem nenhum contato cadastrado</td><td>Mensagem pedindo para cadastrar contatos</td></tr>
+<tr><td>5</td><td>Localização com o GPS desligado</td><td>Alerta "Ative a Localização (GPS)…"</td></tr>
+<tr><td>6</td><td>Localização dentro de casa, longe da janela</td><td>Após 15 s: "Localização indisponível…"</td></tr>
+<tr><td>7</td><td>Localização ao ar livre → Abrir no mapa</td><td>Coordenadas aparecem; mapa abre no ponto certo</td></tr>
+<tr><td>8</td><td>Abrir no mapa antes de obter a localização</td><td>Alerta "Primeiro toque em Obter localização"</td></tr>
+<tr><td>9</td><td>Ligar sirene → Parar todos os alertas</td><td>Som, piscar e vibração param</td></tr>
+<tr><td>10</td><td>Ligar sirene → Voltar ao menu</td><td>A sirene para ao sair da tela</td></tr>
+<tr><td>11</td><td>Marcar os 6 itens do checklist → Reiniciar</td><td>Barra 100% + mensagem; depois 0%</td></tr>
+<tr><td>12</td><td>Contato com nome vazio / telefone com 8 dígitos / repetido / 6º contato</td><td>Uma mensagem de erro específica para cada caso</td></tr>
+<tr><td>13</td><td>Histórico → Limpar → confirmar</td><td>Lista vazia, totais zerados, mensagem "Nenhum evento…"</td></tr>
+<tr><td>14</td><td>Fechar e abrir o app de novo</td><td>Histórico vazio (nova sessão); contatos continuam</td></tr>
+</tbody></table></div>
+
+<h2 id="requisitos"><span class="part">Conferência</span>Onde cada requisito obrigatório é atendido</h2>
+<div class="tbl"><table>
+<thead><tr><th>Requisito</th><th>Onde está</th></tr></thead>
+<tbody>
+<tr><td>1. Tela inicial com menu</td><td>Screen1 com 6 botões de navegação</td></tr>
+<tr><td>2. Pelo menos 4 telas funcionais</td><td>6 telas: SOS, Localização, Alertas, Checklist, Contatos, Histórico</td></tr>
+<tr><td>3. SOS com confirmação e contagem</td><td>TelaSOS: <code>ShowChooseDialog</code> + <code>Clock1</code> de 5 s + estados com cores</td></tr>
+<tr><td>4. Capturar e mostrar localização</td><td>TelaLocalizacao: <code>LocationSensor1</code>, labels de latitude e longitude, mapa via <code>ActivityStarter1</code></td></tr>
+<tr><td>5. Alerta sonoro com interrupção</td><td>TelaAlertas: <code>Player1</code> em loop + <code>BotaoPararTudo</code> (e parada automática ao sair)</td></tr>
+<tr><td>6. Checklist com progresso calculado</td><td>TelaChecklist: laço <code>for each</code> conta os itens e calcula a porcentagem</td></tr>
+<tr><td>7. Histórico em listas na memória</td><td><code>global historico</code> (lista de listas) em cada tela, compartilhada pelo TinyDB e apagada a cada sessão</td></tr>
+<tr><td>8. Validar campos e tratar erros</td><td>TelaContatos (4 validações), GPS desligado, tempo esgotado, permissão negada, <code>ErrorOccurred</code>, ações com confirmação</td></tr>
+<tr><td>9. Interface consistente e responsiva</td><td>Paleta única, mesmo estilo de botão, Voltar sempre no fim, larguras em Fill parent ou percent</td></tr>
+<tr><td>10. Testar em celular e apresentar</td><td>Parte 3: APK + roteiro de 14 testes</td></tr>
+</tbody></table></div>
+<h4>Roteiro curto para a apresentação</h4>
+<ol>
+  <li>Objetivo do app e o mapa de telas (diagrama da visão geral).</li>
+  <li>Demonstração ao vivo no celular, na ordem: Contatos → Checklist → SOS (cancelar e acionar) → Localização → Alertas → Histórico.</li>
+  <li>Mostrar dois trechos de blocos: a contagem regressiva (<code>Clock1.Timer</code>) e o cálculo do progresso (<code>atualizarProgresso</code>).</li>
+  <li>Explicar as decisões: histórico da sessão via TinyDB, lanterna de tela, envio de alerta simulado.</li>
+  <li>Mostrar a tabela de testes com os resultados obtidos.</li>
+</ol>
+
+<h2 id="glossario"><span class="part">Apoio</span>Glossário inglês → português (App Inventor)</h2>
+<div class="tbl"><table>
+<thead><tr><th>Nas imagens</th><th>Na interface em português</th></tr></thead>
+<tbody>
+<tr><td><code>when … do</code></td><td>quando … fazer</td></tr>
+<tr><td><code>set … to</code> / <code>call</code></td><td>ajustar … para / chamar</td></tr>
+<tr><td><code>initialize global … to</code> / <code>initialize local … in</code></td><td>inicializar global … para / inicializar local … em</td></tr>
+<tr><td><code>if / then / else if / else</code></td><td>se / então / senão, se / senão</td></tr>
+<tr><td><code>for each item in list</code></td><td>para cada item na lista</td></tr>
+<tr><td><code>to … do</code> (procedimento)</td><td>para … fazer (procedimento)</td></tr>
+<tr><td><code>create empty list</code> / <code>make a list</code> / <code>add items to list</code></td><td>criar lista vazia / fazer uma lista / adicionar itens à lista</td></tr>
+<tr><td><code>join</code> / <code>trim</code> / <code>is empty</code></td><td>juntar / aparar / é vazio</td></tr>
+<tr><td>Button, Label, TextBox, CheckBox, Slider, ListView</td><td>Botão, Legenda, CaixaDeTexto, CaixaDeSeleção, Deslizador, VisualizadorDeListas</td></tr>
+<tr><td>Notifier, Clock, Sound, Player, LocationSensor, ActivityStarter</td><td>Notificador, Relógio, Som, Tocador, SensorDeLocalização, IniciadorDeAtividades</td></tr>
+<tr><td>VerticalArrangement / HorizontalArrangement</td><td>OrganizaçãoVertical / OrganizaçãoHorizontal</td></tr>
+<tr><td>Text, Visible, Enabled, BackgroundColor, TimerEnabled</td><td>Texto, Visível, Habilitado, CorDeFundo, TemporizadorHabilitado</td></tr>
+</tbody></table></div>
+<p style="color:var(--muted);font-size:15px">As traduções podem variar um pouco entre versões do App Inventor. Na dúvida, mude para English e siga as imagens exatamente.</p>
+</main>
+</div>
+
+<script>
+/* ---------- mini-renderizador de blocos estilo App Inventor ---------- */
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const dd=s=>({dd:s}), L=s=>({lbl:s}), P=s=>({param:s});
+const V=(cat,...p)=>({k:'v',cat,parts:p});
+const VS=(cat,label,items)=>({k:'v',cat,parts:[label],stack:items});
+const VA=(cat,head,args)=>({k:'va',cat,head,args});
+const S=(cat,...p)=>({k:'s',cat,parts:p});
+const SA=(cat,head,args)=>({k:'sa',cat,head,args});
+const C=(cat,sections)=>({k:'c',cat,sections});
+
+function part(x){
+  if(typeof x==='string') return `<span class="t">${esc(x)}</span>`;
+  if(x.dd!==undefined) return `<span class="dd">${esc(x.dd)}<i>▾</i></span>`;
+  if(x.lbl!==undefined) return `<span class="lbl">${esc(x.lbl)}</span>`;
+  if(x.param!==undefined) return `<span class="param">${esc(x.param)}</span>`;
+  if(x.str!==undefined) return `<span class="str">${esc(x.str)}</span>`;
+  if(x.sw!==undefined) return `<span class="sw" style="background:${x.sw}"></span>`;
+  return render(x);
+}
+function render(b){
+  switch(b.k){
+    case 'v':
+      if(b.stack) return `<span class="bv stk c-${b.cat}">${b.parts.map(part).join('')}<span class="col">${b.stack.map(part).join('')}</span></span>`;
+      return `<span class="bv c-${b.cat}">${b.parts.map(part).join('')}</span>`;
+    case 'va': {
+      let rows=b.args.map((a,i)=>`<span class="gl">${i===0?b.head.map(part).join(''):''}<span class="lbl">${esc(a[0])}</span></span><span class="gv">${part(a[1])}</span>`).join('');
+      return `<span class="bv c-${b.cat}" style="display:inline-grid;grid-template-columns:auto auto;column-gap:5px;row-gap:2px;align-items:center">${rows.replace(/class="gl"/g,'style="display:flex;justify-content:flex-end;align-items:center;gap:4px;white-space:nowrap"').replace(/class="gv"/g,'style="display:flex"')}</span>`;
+    }
+    case 's': return `<div class="bs c-${b.cat}">${b.parts.map(part).join('')}</div>`;
+    case 'sa': {
+      let rows=b.args.map((a,i)=>`<div class="gl">${i===0?b.head.map(part).join(''):''}<span class="lbl">${esc(a[0])}</span></div><div class="gv">${part(a[1])}</div>`).join('');
+      return `<div class="bs args c-${b.cat}">${rows}</div>`;
+    }
+    case 'c': {
+      let h=`<div class="bc c-${b.cat}">`;
+      for(const s of b.sections){
+        if(s.head) h+=`<div class="sh">${s.head.map(part).join('')}</div>`;
+        if(s.body) h+=`<div class="row"><div class="ml">${esc(s.label||'')}</div><div class="body">${s.body.map(render).join('')}</div></div>`;
+      }
+      return h+`<div class="foot"></div></div>`;
+    }
+  }
+}
+/* atalhos */
+const T=s=>V('text',{str:s});
+const N=n=>V('math',String(n));
+const TRUE=V('logic',dd('true')), FALSE=V('logic',dd('false'));
+const comp=c=>V('comp',c);
+const gp=(c,p)=>V('get',dd(c),'.',dd(p));
+const sp=(c,p,v)=>S('set','set',dd(c),'.',dd(p),'to',v);
+const gG=n=>V('var','get',dd('global '+n));
+const gL=n=>V('var','get',dd(n));
+const sG=(n,v)=>S('var','set',dd('global '+n),'to',v);
+const sL=(n,v)=>S('var','set',dd(n),'to',v);
+const initG=(n,v)=>S('var','initialize global',{str:n},'to',v);
+const call=(c,m,args)=>args&&args.length?SA('method',['call',dd(c),'.'+m],args):S('method','call',dd(c),'.'+m);
+const callV=(c,m,args)=>args&&args.length?VA('method',['call',dd(c),'.'+m],args):V('method','call',dd(c),'.'+m);
+const ev=(c,e,params,body)=>C('event',[{head:['when',dd(c),'.'+e,...params.map(P)],label:'do',body}]);
+const anyEv=(t,e,params,body)=>C('event',[{head:['when any '+t+'.'+e,...params.map(P)],label:'do',body}]);
+const proc=(n,params,body)=>C('proc',[{head:['to',{str:n},...params.map(P)],label:'do',body}]);
+const pcall=(n,args)=>args&&args.length?SA('proc',['call',n],args):S('proc','call',n);
+const IF=(pairs,els)=>{const sec=[];pairs.forEach((p,i)=>{sec.push({head:[i===0?'if':'else if',p[0]],label:'then',body:p[1]})});if(els)sec.push({label:'else',body:els});return C('control',sec)};
+const local=(n,v,body)=>C('var',[{head:['initialize local',{str:n},'to',v],label:'in',body}]);
+const forEach=(n,lst,body)=>C('control',[{head:['for each',P(n),'in list',lst],label:'do',body}]);
+const eq=(a,b)=>V('logic',a,dd('='),b);
+const cmp=(a,op,b)=>V('math',a,dd(op),b);
+const add=(a,b)=>V('math',a,'+',b), sub=(a,b)=>V('math',a,'-',b), mul=(a,b)=>V('math',a,'×',b), dvd=(a,b)=>V('math',a,'/',b);
+const join=(...i)=>VS('text','join',i);
+const mlist=(...i)=>VS('list','make a list',i);
+const EMPTY=V('list','create empty list');
+const len=x=>V('list','length of list',L('list'),x);
+const isEmptyL=x=>V('list','is list empty?',L('list'),x);
+const isEmptyT=x=>V('text','is empty',x);
+const lenT=x=>V('text','length',x);
+const trim=x=>V('text','trim',x);
+const NOT=x=>V('logic','not',x);
+const OR=(...i)=>VS('logic','or',i);
+const color=(r,g,b,hex)=>V('color','make color',{sw:hex},mlist(N(r),N(g),N(b)));
+const preset=hex=>V('color',{sw:hex});
+const tdbGet=(tag,def)=>callV('TinyDB1','GetValue',[['tag',T(tag)],['valueIfTagNotThere',def]]);
+const tdbSet=(tag,v)=>call('TinyDB1','StoreValue',[['tag',T(tag)],['valueToStore',v]]);
+const alert=msg=>call('Notifier1','ShowAlert',[['notice',typeof msg==='string'?T(msg):msg]]);
+const reg=tipo=>pcall('registrarEvento',[['tipo',T(tipo)]]);
+const CLOSE=S('control','close screen');
+const openS=n=>SA('control',['open another screen'],[['screenName',T(n)]]);
+const selItem=(l,i)=>VA('list',['select list item'],[['list',l],['index',i]]);
+const isIn=(t,l)=>VA('list',['is in list?'],[['thing',t],['list',l]]);
+const fmtDec=(x,n)=>VA('math',['format as decimal'],[['number',x],['places',N(n)]]);
+const ROUND=x=>V('math',dd('round'),x);
+
+const COR={verde:[42,157,143,'#2A9D8F'],ambar:[244,162,97,'#F4A261'],vermelha:[214,40,40,'#D62828'],cinza:[90,99,115,'#5A6373'],fundo:[15,27,45,'#0F1B2D']};
+const initCor=(n,k)=>initG(n,color(...COR[k]));
+
+const BL={
+comum:[
+  initG('historico',EMPTY),
+  proc('registrarEvento',['tipo'],[
+    sG('historico',tdbGet('historico',EMPTY)),
+    SA('list',['add items to list'],[['list',gG('historico')],['item',mlist(
+      callV('Clock1','FormatDateTime',[['instant',callV('Clock1','Now')],['pattern',T('dd/MM/yyyy')]]),
+      callV('Clock1','FormatDateTime',[['instant',callV('Clock1','Now')],['pattern',T('HH:mm:ss')]]),
+      gL('tipo'))]]),
+    tdbSet('historico',gG('historico'))
+  ])
+],
+menu1:[
+  ev('Screen1','Initialize',[],[
+    call('TinyDB1','ClearTag',[['tag',T('historico')]]),
+    call('TinyDB1','ClearTag',[['tag',T('totalSOS')]]),
+    pcall('atualizarResumo')
+  ]),
+  proc('atualizarResumo',[],[
+    local('totalContatos',len(tdbGet('contatos',EMPTY)),[
+      sp('LabelResumo','Text',join(T('Acionamentos de SOS na sessão: '),tdbGet('totalSOS',N(0)),T('\\n'),T('Contatos de confiança: '),gL('totalContatos'))),
+      sp('LabelAviso','Visible',eq(gL('totalContatos'),N(0)))
+    ])
+  ]),
+  ev('Screen1','OtherScreenClosed',['otherScreenName','result'],[pcall('atualizarResumo')])
+],
+menu2:[
+  ev('BotaoSOS','Click',[],[openS('TelaSOS')]),
+  ev('BotaoLocalizacao','Click',[],[openS('TelaLocalizacao')]),
+  ev('BotaoAlertas','Click',[],[openS('TelaAlertas')]),
+  ev('BotaoContatos','Click',[],[openS('TelaContatos')]),
+  ev('BotaoChecklist','Click',[],[openS('TelaChecklist')]),
+  ev('BotaoHistorico','Click',[],[openS('TelaHistorico')])
+],
+sos1:[
+  initG('contagem',N(5)),
+  initG('historico',EMPTY),
+  initCor('corVerde','verde'),initCor('corAmbar','ambar'),initCor('corVermelha','vermelha'),initCor('corCinza','cinza')
+],
+sos2:[
+  proc('mostrarEstado',['estado'],[
+    IF([
+      [eq(gL('estado'),T('pronto')),[
+        sp('ArranjoPainel','BackgroundColor',gG('corVerde')),
+        sp('LabelStatus','Text',T('Sistema pronto')),
+        sp('LabelMensagem','Text',T('Toque em SOS em caso de emergência')),
+        sp('LabelContagem','Text',T('')),
+        sp('BotaoSOS','Enabled',TRUE),
+        sp('BotaoCancelar','Visible',FALSE)]],
+      [eq(gL('estado'),T('contagem')),[
+        sp('ArranjoPainel','BackgroundColor',gG('corAmbar')),
+        sp('LabelStatus','Text',T('Acionando em...')),
+        sp('LabelMensagem','Text',T('Toque em CANCELAR se foi engano')),
+        sp('BotaoSOS','Enabled',FALSE),
+        sp('BotaoCancelar','Visible',TRUE)]],
+      [eq(gL('estado'),T('acionado')),[
+        sp('ArranjoPainel','BackgroundColor',gG('corVermelha')),
+        sp('LabelStatus','Text',T('SOS ACIONADO!')),
+        sp('LabelContagem','Text',T('')),
+        sp('BotaoSOS','Enabled',TRUE),
+        sp('BotaoCancelar','Visible',FALSE)]]
+    ],[
+        sp('ArranjoPainel','BackgroundColor',gG('corCinza')),
+        sp('LabelStatus','Text',T('Acionamento cancelado')),
+        sp('LabelMensagem','Text',T('Nenhum alerta foi enviado')),
+        sp('LabelContagem','Text',T('')),
+        sp('BotaoSOS','Enabled',TRUE),
+        sp('BotaoCancelar','Visible',FALSE)])
+  ])
+],
+sos3:[
+  ev('TelaSOS','Initialize',[],[
+    sG('historico',tdbGet('historico',EMPTY)),
+    pcall('mostrarEstado',[['estado',T('pronto')]]),
+    pcall('atualizarContador')
+  ]),
+  ev('BotaoSOS','Click',[],[
+    call('Notifier1','ShowChooseDialog',[['message',T('Deseja realmente acionar o SOS?')],['title',T('Confirmar emergência')],['button1Text',T('SIM, ACIONAR')],['button2Text',T('Cancelar')],['cancelable',FALSE]])
+  ]),
+  ev('Notifier1','AfterChoosing',['choice'],[
+    IF([[eq(gL('choice'),T('SIM, ACIONAR')),[
+      sG('contagem',N(5)),
+      pcall('mostrarEstado',[['estado',T('contagem')]]),
+      sp('LabelContagem','Text',gG('contagem')),
+      sp('Clock1','TimerEnabled',TRUE)
+    ]]])
+  ])
+],
+sos4:[
+  ev('Clock1','Timer',[],[
+    sG('contagem',sub(gG('contagem'),N(1))),
+    IF([[cmp(gG('contagem'),'>',N(0)),[
+      sp('LabelContagem','Text',gG('contagem')),
+      call('Sound1','Vibrate',[['millisecs',N(200)]])
+    ]]],[
+      sp('Clock1','TimerEnabled',FALSE),
+      pcall('acionarSOS')
+    ])
+  ]),
+  proc('acionarSOS',[],[
+    pcall('mostrarEstado',[['estado',T('acionado')]]),
+    call('Sound1','Vibrate',[['millisecs',N(1500)]]),
+    local('contatos',tdbGet('contatos',EMPTY),[
+      IF([[isEmptyL(gL('contatos')),[
+        sp('LabelMensagem','Text',T('Nenhum contato cadastrado! Cadastre na tela Contatos.'))
+      ]]],[
+        sp('LabelMensagem','Text',join(T('Alerta enviado para '),len(gL('contatos')),T(' contato(s) (simulação)')))
+      ])
+    ]),
+    tdbSet('totalSOS',add(tdbGet('totalSOS',N(0)),N(1))),
+    reg('SOS acionado'),
+    pcall('atualizarContador')
+  ]),
+  proc('atualizarContador',[],[
+    sp('LabelAcionamentos','Text',join(T('Acionamentos nesta sessão: '),tdbGet('totalSOS',N(0))))
+  ])
+],
+sos5:[
+  ev('BotaoCancelar','Click',[],[
+    sp('Clock1','TimerEnabled',FALSE),
+    pcall('mostrarEstado',[['estado',T('cancelado')]]),
+    reg('SOS cancelado')
+  ]),
+  ev('BotaoVoltar','Click',[],[sp('Clock1','TimerEnabled',FALSE),CLOSE]),
+  ev('TelaSOS','BackPressed',[],[sp('Clock1','TimerEnabled',FALSE),CLOSE])
+],
+loc1:[
+  initG('latitude',N(0)),initG('longitude',N(0)),
+  initG('temLocalizacao',FALSE),initG('aguardando',FALSE),
+  initG('historico',EMPTY),
+  ev('TelaLocalizacao','Initialize',[],[
+    sG('historico',tdbGet('historico',EMPTY)),
+    sp('BotaoAbrirMapa','Enabled',FALSE),
+    sp('LabelStatusGPS','Text',T('Toque em "Obter localização"'))
+  ])
+],
+loc2:[
+  ev('BotaoObterLocalizacao','Click',[],[
+    IF([[NOT(OR(isIn(T('gps'),gp('LocationSensor1','AvailableProviders')),isIn(T('network'),gp('LocationSensor1','AvailableProviders')))),[
+      sp('LabelStatusGPS','Text',T('GPS desativado')),
+      alert('Ative a Localização (GPS) do celular e tente novamente.'),
+      reg('Falha: GPS desativado')
+    ]]],[
+      sp('LocationSensor1','Enabled',TRUE),
+      sG('aguardando',TRUE),
+      sp('LabelStatusGPS','Text',T('Procurando sinal de GPS...')),
+      IF([[gp('LocationSensor1','HasLongitudeLatitude'),[
+        pcall('mostrarLocalizacao',[['lat',gp('LocationSensor1','Latitude')],['lon',gp('LocationSensor1','Longitude')]])
+      ]]],[
+        sp('Clock1','TimerEnabled',TRUE)
+      ])
+    ])
+  ])
+],
+loc3:[
+  ev('LocationSensor1','LocationChanged',['latitude','longitude','altitude','speed'],[
+    IF([[gG('aguardando'),[
+      pcall('mostrarLocalizacao',[['lat',gL('latitude')],['lon',gL('longitude')]])
+    ]]])
+  ]),
+  proc('mostrarLocalizacao',['lat','lon'],[
+    sG('aguardando',FALSE),
+    sp('Clock1','TimerEnabled',FALSE),
+    sG('latitude',gL('lat')),
+    sG('longitude',gL('lon')),
+    sG('temLocalizacao',TRUE),
+    sp('LabelLatitude','Text',join(T('Latitude: '),fmtDec(gL('lat'),6))),
+    sp('LabelLongitude','Text',join(T('Longitude: '),fmtDec(gL('lon'),6))),
+    sp('LabelStatusGPS','Text',T('Localização obtida com sucesso')),
+    sp('BotaoAbrirMapa','Enabled',TRUE),
+    reg('Localização capturada')
+  ])
+],
+loc4:[
+  ev('Clock1','Timer',[],[
+    sp('Clock1','TimerEnabled',FALSE),
+    IF([[gG('aguardando'),[
+      sG('aguardando',FALSE),
+      sp('LabelStatusGPS','Text',T('Localização indisponível. Vá para um local aberto e tente de novo.')),
+      alert('Não foi possível obter a localização em 15 segundos.'),
+      reg('Falha: localização indisponível')
+    ]]])
+  ]),
+  ev('BotaoAbrirMapa','Click',[],[
+    IF([[NOT(gG('temLocalizacao')),[
+      alert('Primeiro toque em Obter localização.')
+    ]]],[
+      sp('ActivityStarter1','Action',T('android.intent.action.VIEW')),
+      sp('ActivityStarter1','DataUri',join(T('https://www.google.com/maps/search/?api=1&query='),gG('latitude'),T(','),gG('longitude'))),
+      call('ActivityStarter1','StartActivity'),
+      reg('Mapa aberto')
+    ])
+  ])
+],
+loc5:[
+  ev('TelaLocalizacao','PermissionDenied',['component','functionName','permissionName'],[
+    sG('aguardando',FALSE),
+    sp('LabelStatusGPS','Text',T('Sem permissão de localização')),
+    alert('Permissão negada. Libere a localização em Configurações > Apps > PAM Segurança.')
+  ]),
+  ev('TelaLocalizacao','ErrorOccurred',['component','functionName','errorNumber','message'],[
+    alert(join(T('Não foi possível concluir a ação: '),gL('message')))
+  ]),
+  ev('BotaoVoltar','Click',[],[
+    sp('Clock1','TimerEnabled',FALSE),
+    sp('LocationSensor1','Enabled',FALSE),
+    CLOSE
+  ])
+],
+al1:[
+  initG('sireneLigada',FALSE),initG('piscar',FALSE),
+  initG('historico',EMPTY),
+  initCor('corVermelha','vermelha'),initCor('corFundo','fundo')
+],
+al2:[
+  ev('BotaoSirene','Click',[],[
+    IF([[gG('sireneLigada'),[
+      pcall('pararAlertas')
+    ]]],[
+      call('Player1','Start'),
+      sG('sireneLigada',TRUE),
+      sp('Clock1','TimerEnabled',TRUE),
+      sp('BotaoSirene','Text',T('🔇 Desligar sirene')),
+      sp('LabelStatusAlerta','Text',T('SIRENE LIGADA')),
+      reg('Sirene ligada')
+    ])
+  ]),
+  ev('Clock1','Timer',[],[
+    sG('piscar',NOT(gG('piscar'))),
+    IF([[gG('piscar'),[
+      sp('ArranjoPrincipal','BackgroundColor',gG('corVermelha'))
+    ]]],[
+      sp('ArranjoPrincipal','BackgroundColor',gG('corFundo'))
+    ]),
+    call('Player1','Vibrate',[['milliseconds',N(300)]])
+  ])
+],
+al3:[
+  ev('BotaoLanterna','Click',[],[
+    sp('ArranjoPrincipal','Visible',FALSE),
+    sp('BotaoLuz','Visible',TRUE),
+    reg('Lanterna de tela ligada')
+  ]),
+  ev('BotaoLuz','Click',[],[
+    sp('BotaoLuz','Visible',FALSE),
+    sp('ArranjoPrincipal','Visible',TRUE)
+  ])
+],
+al4:[
+  proc('pararAlertas',[],[
+    call('Player1','Stop'),
+    sp('Clock1','TimerEnabled',FALSE),
+    sG('sireneLigada',FALSE),
+    sG('piscar',FALSE),
+    sp('ArranjoPrincipal','BackgroundColor',gG('corFundo')),
+    sp('BotaoSirene','Text',T('🔊 Ligar sirene')),
+    sp('LabelStatusAlerta','Text',T('Alertas desligados'))
+  ]),
+  ev('BotaoPararTudo','Click',[],[
+    pcall('pararAlertas'),
+    sp('BotaoLuz','Visible',FALSE),
+    sp('ArranjoPrincipal','Visible',TRUE),
+    reg('Todos os alertas interrompidos'),
+    alert('Todos os alertas foram interrompidos.')
+  ]),
+  ev('BotaoVoltar','Click',[],[pcall('pararAlertas'),CLOSE]),
+  ev('TelaAlertas','BackPressed',[],[pcall('pararAlertas'),CLOSE]),
+  ev('TelaAlertas','ErrorOccurred',['component','functionName','errorNumber','message'],[
+    pcall('pararAlertas'),
+    alert(join(T('Erro no alerta: '),gL('message'),T('. Verifique o arquivo de som.')))
+  ])
+],
+ch1:[
+  initG('itens',EMPTY),
+  initG('concluidoRegistrado',FALSE),
+  initG('historico',EMPTY),
+  initCor('corVerde','verde'),
+  ev('TelaChecklist','Initialize',[],[
+    sG('historico',tdbGet('historico',EMPTY)),
+    sG('itens',mlist(comp('CheckBox1'),comp('CheckBox2'),comp('CheckBox3'),comp('CheckBox4'),comp('CheckBox5'),comp('CheckBox6'))),
+    pcall('atualizarProgresso')
+  ]),
+  anyEv('CheckBox','Changed',['component','notAlreadyHandled'],[pcall('atualizarProgresso')])
+],
+ch2:[
+  proc('atualizarProgresso',[],[
+    local('marcados',N(0),[
+      forEach('item',gG('itens'),[
+        IF([[V('get','CheckBox.',dd('Checked'),L('of component'),gL('item')),[
+          sL('marcados',add(gL('marcados'),N(1)))
+        ]]])
+      ]),
+      local('percentual',ROUND(mul(dvd(gL('marcados'),len(gG('itens'))),N(100))),[
+        sp('Slider1','ThumbPosition',gL('percentual')),
+        sp('LabelProgresso','Text',join(gL('marcados'),T(' de '),len(gG('itens')),T(' itens concluídos ('),gL('percentual'),T('%)'))),
+        IF([[eq(gL('percentual'),N(100)),[
+          sp('LabelProgresso','BackgroundColor',gG('corVerde')),
+          IF([[NOT(gG('concluidoRegistrado')),[
+            sG('concluidoRegistrado',TRUE),
+            alert('Checklist completo! Saia com segurança.'),
+            reg('Checklist concluído')
+          ]]])
+        ]]],[
+          sp('LabelProgresso','BackgroundColor',color(31,51,80,'#1F3350')),
+          sG('concluidoRegistrado',FALSE)
+        ])
+      ])
+    ])
+  ])
+],
+ch3:[
+  ev('BotaoReiniciar','Click',[],[
+    forEach('item',gG('itens'),[
+      SA('set',['set','CheckBox.',dd('Checked')],[['of component',gL('item')],['to',FALSE]])
+    ]),
+    pcall('atualizarProgresso'),
+    reg('Checklist reiniciado')
+  ]),
+  ev('BotaoVoltar','Click',[],[CLOSE])
+],
+ct1:[
+  initG('contatos',EMPTY),
+  initG('historico',EMPTY),
+  ev('TelaContatos','Initialize',[],[
+    sG('historico',tdbGet('historico',EMPTY)),
+    sG('contatos',tdbGet('contatos',EMPTY)),
+    pcall('atualizarLista')
+  ]),
+  proc('atualizarLista',[],[
+    sp('ListViewContatos','Elements',gG('contatos')),
+    sp('LabelInfo','Text',join(T('Contatos cadastrados: '),len(gG('contatos')),T(' de 5 · toque para remover')))
+  ])
+],
+ct2:[
+  ev('BotaoAdicionar','Click',[],[
+    local('nome',trim(gp('TextBoxNome','Text')),[
+      local('telefone',trim(gp('TextBoxTelefone','Text')),[
+        local('contato',join(gL('nome'),T(' — '),gL('telefone')),[
+          IF([
+            [isEmptyT(gL('nome')),[alert('Digite o nome do contato.')]],
+            [OR(NOT(V('math','is number?',dd('Base 10'),gL('telefone'))),cmp(lenT(gL('telefone')),'<',N(10)),cmp(lenT(gL('telefone')),'>',N(11))),[
+              alert('Telefone inválido: use DDD + número, só dígitos (10 ou 11).')]],
+            [isIn(gL('contato'),gG('contatos')),[alert('Este contato já está na lista.')]],
+            [cmp(len(gG('contatos')),'≥',N(5)),[alert('Limite de 5 contatos. Remova um para adicionar outro.')]]
+          ],[
+            SA('list',['add items to list'],[['list',gG('contatos')],['item',gL('contato')]]),
+            tdbSet('contatos',gG('contatos')),
+            sp('TextBoxNome','Text',T('')),
+            sp('TextBoxTelefone','Text',T('')),
+            call('TextBoxTelefone','HideKeyboard'),
+            pcall('atualizarLista'),
+            alert('Contato salvo!'),
+            reg('Contato cadastrado')
+          ])
+        ])
+      ])
+    ])
+  ])
+],
+ct3:[
+  ev('ListViewContatos','AfterPicking',[],[
+    call('Notifier1','ShowChooseDialog',[['message',join(T('Remover '),gp('ListViewContatos','Selection'),T('?'))],['title',T('Remover contato')],['button1Text',T('Remover')],['button2Text',T('Cancelar')],['cancelable',FALSE]])
+  ]),
+  ev('Notifier1','AfterChoosing',['choice'],[
+    IF([[eq(gL('choice'),T('Remover')),[
+      SA('list',['remove list item'],[['list',gG('contatos')],['index',gp('ListViewContatos','SelectionIndex')]]),
+      tdbSet('contatos',gG('contatos')),
+      pcall('atualizarLista'),
+      reg('Contato removido')
+    ]]])
+  ]),
+  ev('BotaoVoltar','Click',[],[CLOSE])
+],
+hi1:[
+  initG('historico',EMPTY),
+  ev('TelaHistorico','Initialize',[],[pcall('atualizarTela')]),
+  proc('atualizarTela',[],[
+    sG('historico',tdbGet('historico',EMPTY)),
+    local('linhas',EMPTY,[
+      forEach('evento',gG('historico'),[
+        SA('list',['insert list item'],[['list',gL('linhas')],['index',N(1)],['item',join(selItem(gL('evento'),N(1)),T(' às '),selItem(gL('evento'),N(2)),T(' — '),selItem(gL('evento'),N(3)))]])
+      ]),
+      sp('ListViewHistorico','Elements',gL('linhas'))
+    ]),
+    sp('LabelTotalSOS','Text',join(T('SOS acionados\\n'),tdbGet('totalSOS',N(0)))),
+    sp('LabelTotalEventos','Text',join(T('Eventos\\n'),len(gG('historico')))),
+    sp('LabelVazio','Visible',isEmptyL(gG('historico')))
+  ])
+],
+hi2:[
+  ev('BotaoLimpar','Click',[],[
+    IF([[isEmptyL(gG('historico')),[
+      alert('O histórico já está vazio.')
+    ]]],[
+      call('Notifier1','ShowChooseDialog',[['message',T('Apagar todos os eventos desta sessão?')],['title',T('Limpar histórico')],['button1Text',T('Apagar')],['button2Text',T('Cancelar')],['cancelable',FALSE]])
+    ])
+  ]),
+  ev('Notifier1','AfterChoosing',['choice'],[
+    IF([[eq(gL('choice'),T('Apagar')),[
+      sG('historico',EMPTY),
+      tdbSet('historico',gG('historico')),
+      tdbSet('totalSOS',N(0)),
+      pcall('atualizarTela'),
+      alert('Histórico apagado.')
+    ]]])
+  ]),
+  ev('BotaoVoltar','Click',[],[CLOSE])
+]
+};
+document.querySelectorAll('[data-b]').forEach(el=>{
+  const list=BL[el.dataset.b]||[];
+  el.innerHTML=list.map(b=>`<div class="blk">${render(b)}</div>`).join('');
+});
+</script>
